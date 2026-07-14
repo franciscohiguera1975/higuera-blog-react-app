@@ -7,7 +7,7 @@ export default function PublicHeader() {
 
   return (
     <header className="flex items-center justify-between border-b p-4">
-      <Link to="/" className="font-semibold">BlogApp</Link>
+      <Link to="/" className="font-semibold">BlogApp - Autor: Francisco Higuera</Link>
       <div className="flex items-center gap-3">
         {isAuthenticated ? (
           <Link to="/dashboard">Ir al dashboard</Link>
