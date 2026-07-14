@@ -8,7 +8,7 @@ vi.mock('@/api/courses.api', () => ({
   updateCourse: vi.fn(),
 }))
 
-import { createCourse, updateCourse } from '@/api/courses.api'
+import { createCourse } from '@/api/courses.api'
 
 const onOpenChange = vi.fn()
 const onSaved = vi.fn()
