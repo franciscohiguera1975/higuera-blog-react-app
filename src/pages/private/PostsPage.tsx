@@ -7,11 +7,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import PostFormDialog from '@/components/private/PostFormDialog'
+import { useToastStore } from '@/store/toast.store'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [editing, setEditing] = useState<Post | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const showToast = useToastStore((s) => s.show)
+  const [deleteTarget, setDeleteTarget] = useState<Post | null>(null)
 
   const load = async () => {
     const result = await getPosts({ limit: 50 })
@@ -20,8 +24,11 @@ export default function PostsPage() {
 
   useEffect(() => { load() }, [])
 
-  const handleDelete = async (id: string) => {
-    await deletePost(id)
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await deletePost(deleteTarget.id)
+    showToast('Post eliminado', 'success')
+    setDeleteTarget(null)
     load()
   }
 
@@ -46,7 +53,7 @@ export default function PostsPage() {
                 <Button variant="outline" size="sm" onClick={() => { setEditing(post); setDialogOpen(true) }}>
                   Editar
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(post.id)}>
+                <Button variant="destructive" size="sm" onClick={() => { setDeleteTarget(post); }}>
                   Borrar
                 </Button>
               </TableCell>
@@ -62,6 +69,13 @@ export default function PostsPage() {
         onOpenChange={setDialogOpen}
         post={editing}
         onSaved={load}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Eliminar post"
+        description={`¿Seguro que quieres eliminar "${deleteTarget?.title}"? Esta acción no se puede deshacer.`}
+        onConfirm={handleDelete}
       />
     </div>
   )

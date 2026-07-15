@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { useToastStore } from '@/store/toast.store'
 
 const schema = z.object({
   nombre: z.string().min(3, 'Mínimo 3 caracteres'),
@@ -37,6 +38,7 @@ interface Props {
 export default function CourseFormDialog({ open, onOpenChange, course, onSaved }: Props) {
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
+    const showToast = useToastStore((s) => s.show)  
 
   useEffect(() => {
     reset({
@@ -72,6 +74,7 @@ export default function CourseFormDialog({ open, onOpenChange, course, onSaved }
     }
     if (course) await updateCourse(course._id, payload)
     else await createCourse(payload)
+    showToast(course ? 'Curso actualizado' : 'Curso creado', 'success')
     onOpenChange(false)
     onSaved()
   }

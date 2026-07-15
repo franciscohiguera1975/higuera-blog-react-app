@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToastStore } from '@/store/toast.store'
 
 const schema = z.object({
   title: z.string().min(3, 'Mínimo 3 caracteres'),
@@ -32,6 +33,7 @@ export default function PostFormDialog({ open, onOpenChange, post, onSaved }: Pr
   const [categories, setCategories] = useState<Category[]>([])
   const { register, control, handleSubmit, reset, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
+  const showToast = useToastStore((s) => s.show)
 
   useEffect(() => { getCategories({ limit: 100 }).then((res) => setCategories(res.items)) }, [])
 
@@ -46,6 +48,7 @@ export default function PostFormDialog({ open, onOpenChange, post, onSaved }: Pr
   const onSubmit = async (values: FormValues) => {
     if (post) await updatePost(post.id, values)
     else await createPost(values)
+    showToast(post ? 'Post actualizado' : 'Post creado', 'success')
     onOpenChange(false)
     onSaved()
   }

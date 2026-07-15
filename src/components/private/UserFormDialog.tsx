@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToastStore } from '@/store/toast.store'
 
 const schema = z.object({
   username: z.string().min(3, 'Mínimo 3 caracteres'),
@@ -27,6 +28,7 @@ interface Props {
 export default function UserFormDialog({ open, onOpenChange, user, onSaved }: Props) {
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
+  const showToast = useToastStore((s) => s.show)  
 
   useEffect(() => {
     reset({ username: user?.username ?? '', email: user?.email ?? '', password: '' })
@@ -39,6 +41,7 @@ export default function UserFormDialog({ open, onOpenChange, user, onSaved }: Pr
     } else {
       await createUser({ username: values.username, email: values.email, password: values.password })
     }
+    showToast(user ? 'Usuario actualizado' : 'Usuario creado', 'success')
     onOpenChange(false)
     onSaved()
   }

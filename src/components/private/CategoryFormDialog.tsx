@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToastStore } from '@/store/toast.store'
 
 const schema = z.object({
   name: z.string().min(2, 'Mínimo 2 caracteres'),
@@ -25,6 +26,7 @@ interface Props {
 export default function CategoryFormDialog({ open, onOpenChange, category, onSaved }: Props) {
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
+  const showToast = useToastStore((s) => s.show)
 
   useEffect(() => {
     reset({ name: category?.name ?? '' })
@@ -33,6 +35,7 @@ export default function CategoryFormDialog({ open, onOpenChange, category, onSav
   const onSubmit = async (values: FormValues) => {
     if (category) await updateCategory(category.id, values)
     else await createCategory(values)
+    showToast(category ? 'Categoría actualizada' : 'Categoría creada', 'success')
     onOpenChange(false)
     onSaved()
   }
@@ -57,3 +60,4 @@ export default function CategoryFormDialog({ open, onOpenChange, category, onSav
     </Dialog>
   )
 }
+

@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { useToastStore } from '@/store/toast.store'
 
 export default function ToastContainer() {
-  const { message, clear } = useToastStore()
+  const { message, type, clear } = useToastStore()
 
   useEffect(() => {
     if (!message) return
@@ -13,8 +13,11 @@ export default function ToastContainer() {
 
   if (!message) return null
 
+  const colorClass =
+    type === 'success' ? 'bg-green-600 text-white' : 'bg-destructive text-destructive-foreground'
+
   return (
-    <div className="fixed bottom-4 right-4 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground shadow-lg">
+    <div className={`fixed bottom-4 right-4 rounded-md px-4 py-3 text-sm shadow-lg ${colorClass}`}>
       {message}
     </div>
   )

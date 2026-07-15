@@ -19,7 +19,7 @@ http.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) useAuthStore.getState().logout()
     const message = error.response?.data?.message ?? 'Ocurrió un error inesperado'
-    useToastStore.getState().show(Array.isArray(message) ? message.join(', ') : message)
+    useToastStore.getState().show(Array.isArray(message) ? message.join(', ') : message, 'error')
     return Promise.reject(error)
   },
 )
