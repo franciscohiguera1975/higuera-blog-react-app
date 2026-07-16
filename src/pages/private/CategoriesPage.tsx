@@ -6,14 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import CategoryFormDialog from '@/components/private/CategoryFormDialog'
 import { useToastStore } from '@/store/toast.store'
-import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [editing, setEditing] = useState<Category | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const showToast = useToastStore((s) => s.show)
-  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
 
   const load = async () => {
     const result = await getCategories({ limit: 50 })
@@ -22,12 +20,10 @@ export default function CategoriesPage() {
 
   useEffect(() => { load() }, [])
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    await deleteCategory(deleteTarget.id)
+  const handleDelete = async (category: Category) => {
+    await deleteCategory(category.id)
     showToast('Categoría eliminada', 'success')
-    setDeleteTarget(null)
-    load()
+    await load()
   }
 
   return (
@@ -48,8 +44,8 @@ export default function CategoriesPage() {
                 <Button variant="outline" size="sm" onClick={() => { setEditing(category); setDialogOpen(true) }}>
                   Editar
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(category)}>
-                  Eliminar
+                <Button variant="destructive" size="sm" onClick={() => { void handleDelete(category) }}>
+                  Borrar
                 </Button>
               </TableCell>
             </TableRow>
@@ -61,13 +57,6 @@ export default function CategoriesPage() {
         onOpenChange={setDialogOpen}
         category={editing}
         onSaved={load}
-      />
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title="Eliminar categoría"
-        description={`¿Seguro que quieres eliminar "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
       />
     </div>
   )

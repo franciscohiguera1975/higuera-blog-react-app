@@ -6,14 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import UserFormDialog from '@/components/private/UserFormDialog'
 import { useToastStore } from '@/store/toast.store'
-import ConfirmDialog from '@/components/ConfirmDialog'
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [editing, setEditing] = useState<User | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const showToast = useToastStore((s) => s.show)
-  const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
 
   const load = async () => {
     const result = await getUsers({ limit: 50 })
@@ -22,12 +20,10 @@ export default function UsersPage() {
 
   useEffect(() => { load() }, [])
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    await deleteUser(deleteTarget.id)
+  const handleDelete = async (user: User) => {
+    await deleteUser(user.id)
     showToast('Usuario eliminado', 'success')
-    setDeleteTarget(null)
-    load()
+    await load()
   }
 
   return (
@@ -49,7 +45,7 @@ export default function UsersPage() {
                 <Button variant="outline" size="sm" onClick={() => { setEditing(user); setDialogOpen(true) }}>
                   Editar
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => { setDeleteTarget(user); }}>
+                <Button variant="destructive" size="sm" onClick={() => { void handleDelete(user) }}>
                   Borrar
                 </Button>
               </TableCell>
@@ -62,13 +58,6 @@ export default function UsersPage() {
         onOpenChange={setDialogOpen}
         user={editing}
         onSaved={load}
-      />
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title="Eliminar usuario"
-        description={`¿Seguro que quieres eliminar "${deleteTarget?.username}"? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
       />
     </div>
   )

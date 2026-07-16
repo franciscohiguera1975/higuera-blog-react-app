@@ -11,7 +11,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { AvatarImage } from '@/components/ui/avatar'
-import { profileImageUrl } from '@/lib/urls'
+import { avatarSrc } from '@/lib/urls'
 
 export default function DashboardHeader() {
   const navigate = useNavigate()
@@ -28,7 +28,7 @@ export default function DashboardHeader() {
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={profileImageUrl(user?.profile)} />
+            <AvatarImage src={avatarSrc(user)} />
             <AvatarFallback className={cn(avatarColor(user?.username ?? '?'), 'text-white')}>
               {user?.username.slice(0, 2).toUpperCase() ?? '..'}
             </AvatarFallback>

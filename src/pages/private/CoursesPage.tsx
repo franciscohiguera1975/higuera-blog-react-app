@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import CourseFormDialog from '@/components/private/CourseFormDialog'
 import { useToastStore } from '@/store/toast.store'
-import ConfirmDialog from '@/components/ConfirmDialog'
 
 const ESTADO_STYLES: Record<string, string> = {
   activo: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
@@ -18,7 +17,6 @@ export default function CoursesPage() {
   const [editing, setEditing] = useState<Curso | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const showToast = useToastStore((s) => s.show)
-  const [deleteTarget, setDeleteTarget] = useState<Curso | null>(null)
 
   const load = async () => {
     const result = await getCourses(1, 50)
@@ -27,12 +25,10 @@ export default function CoursesPage() {
 
   useEffect(() => { load() }, [])
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    await deleteCourse(deleteTarget._id)
+  const handleDelete = async (curso: Curso) => {
+    await deleteCourse(curso._id)
     showToast('Curso eliminado', 'success')
-    setDeleteTarget(null)
-    load()
+    await load()
   }
 
   return (
@@ -68,7 +64,7 @@ export default function CoursesPage() {
                 <Button variant="outline" size="sm" onClick={() => { setEditing(curso); setDialogOpen(true) }}>
                   Editar
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => { setDeleteTarget(curso); }}>
+                <Button variant="destructive" size="sm" onClick={() => { void handleDelete(curso) }}>
                   Borrar
                 </Button>
               </TableCell>
@@ -81,13 +77,6 @@ export default function CoursesPage() {
         onOpenChange={setDialogOpen}
         course={editing}
         onSaved={load}
-      />
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title="Eliminar curso"
-        description={`¿Seguro que quieres eliminar "${deleteTarget?.nombre}"? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
       />
     </div>
   )
