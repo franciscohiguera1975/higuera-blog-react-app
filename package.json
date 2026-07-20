@@ -11,7 +11,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
@@ -41,6 +43,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
+    "cypress": "^15.18.1",
     "jsdom": "^29.1.1",
     "msw": "^2.15.0",
     "oxlint": "^1.71.0",
