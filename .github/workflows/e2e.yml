@@ -34,22 +34,35 @@ jobs:
           --health-retries 10
 
     steps:
+      # Checkout de este repo (el frontend), en la raíz del runner.
       - uses: actions/checkout@v4
+
+      # higuera-blog-backend vive en OTRO repositorio de GitHub, no en una
+      # carpeta hermana como en el entorno local de desarrollo. Hace falta
+      # clonarlo aparte, en una subcarpeta, para poder levantarlo en este job.
+      # Como ese repo es público, no hace falta ningún token extra. Si en algún
+      # momento pasa a ser privado, agregá `token: ${{ secrets.BACKEND_REPO_TOKEN }}`
+      # con un Personal Access Token que tenga permiso de lectura sobre ese repo
+      # (el GITHUB_TOKEN por defecto solo puede leer el repo donde corre el workflow).
+      - name: Clonar higuera-blog-backend
+        uses: actions/checkout@v4
+        with:
+          repository: franciscohiguera1975/higuera-blog-backend
+          path: backend
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Instalar dependencias del backend
-        working-directory: higuera-blog-backend
+        working-directory: backend
         run: npm ci
 
       - name: Instalar dependencias del frontend
-        working-directory: higuera-blog-react-app
         run: npm ci
 
       - name: Arrancar el backend
-        working-directory: higuera-blog-backend
+        working-directory: backend
         run: npm run start:dev &
         env:
           DB_HOST: localhost
@@ -62,14 +75,12 @@ jobs:
           JWT_EXPIRES_IN: 3600s
 
       - name: Arrancar el frontend
-        working-directory: higuera-blog-react-app
-        run: npm run dev -- --port 5180 &
+        run: npm run dev -- --port 5173 &
 
       - name: Esperar a que backend y frontend respondan
-        run: npx wait-on http://localhost:3000/categories http://localhost:5180 --timeout 60000
+        run: npx wait-on http://localhost:3000/categories http://localhost:5173 --timeout 60000
 
       - name: Correr Cypress
-        working-directory: higuera-blog-react-app
         run: npx cypress run
 
       - name: Subir screenshots de fallas (si las hay)
@@ -77,4 +88,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cypress-screenshots
-          path: higuera-blog-react-app/cypress/screenshots
+          path: cypress/screenshots
