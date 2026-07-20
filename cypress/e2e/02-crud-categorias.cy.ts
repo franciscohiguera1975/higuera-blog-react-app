@@ -1,70 +1,47 @@
 // cypress/e2e/02-crud-categorias.cy.ts
-import { uniqueEmail, uniqueName, uniqueUsername } from '../support/utils'
+import { mockCategories } from '../support/mocks/categories'
+import { uniqueName } from '../support/utils'
 
 describe('CRUD de Categorías', () => {
-    let categoryId: string | undefined
+  it('crea una categoría nueva', () => {
+    mockCategories()
+    cy.loginByApi('/categorias')
 
-    beforeEach(() => {
-        categoryId = undefined
-        cy.intercept('POST', '**/categories').as('createCategory')
-        cy.loginByApi(uniqueUsername(), uniqueEmail(), 'secret123', '/categorias')
-    })
+    const name = uniqueName('Categoría')
+    cy.contains('button', 'Nueva categoría').click()
+    cy.contains('Nueva categoría').should('be.visible')
+    cy.get('#name').type(name)
+    cy.contains('button', 'Guardar').click()
 
-    afterEach(() => {
-        // No hay endpoint de reset: se borra por API lo que haya quedado creado.
-        if (categoryId) cy.apiDeleteCategory(categoryId)
-    })
+    cy.wait('@createCategory')
+    cy.contains('td', name).should('be.visible')
+  })
 
-    it('crea una categoría nueva', () => {
-        const name = uniqueName('Categoría')
+  it('edita una categoría existente', () => {
+    const name = uniqueName('Categoría')
+    mockCategories([{ id: crypto.randomUUID(), name }])
+    cy.loginByApi('/categorias')
 
-        cy.contains('button', 'Nueva categoría').click()
-        cy.contains('Nueva categoría').should('be.visible')
-        cy.get('#name').type(name)
-        cy.contains('button', 'Guardar').click()
+    const newName = uniqueName('Categoría editada')
+    cy.contains('td', name)
+      .parent('tr')
+      .within(() => cy.contains('button', 'Editar').click())
+    cy.contains('Editar categoría').should('be.visible')
+    cy.get('#name').clear().type(newName)
+    cy.contains('button', 'Guardar').click()
 
-        cy.wait('@createCategory').then(({ response }) => {
-            categoryId = response?.body.data.id
-        })
-        cy.contains('td', name).should('be.visible')
-    })
+    cy.contains('td', newName).should('be.visible')
+  })
 
-    it('edita una categoría existente', () => {
-        const name = uniqueName('Categoría')
-        const newName = uniqueName('Categoría editada')
+  it('borra una categoría existente', () => {
+    const name = uniqueName('Categoría')
+    mockCategories([{ id: crypto.randomUUID(), name }])
+    cy.loginByApi('/categorias')
 
-        cy.apiCreateCategory(name).then((id) => {
-            categoryId = id
-        })
-        cy.reload()
+    cy.contains('td', name)
+      .parent('tr')
+      .within(() => cy.contains('button', 'Borrar').click())
 
-        cy.contains('td', name)
-            .parent('tr')
-            .within(() => cy.contains('button', 'Editar').click())
-        cy.contains('Editar categoría').should('be.visible')
-        cy.get('#name').clear().type(newName)
-        cy.contains('button', 'Guardar').click()
-
-        cy.contains('td', newName).should('be.visible')
-    })
-
-    it('borra una categoría existente', () => {
-        const name = uniqueName('Categoría')
-
-        cy.apiCreateCategory(name).then((id) => {
-            categoryId = id
-        })
-        cy.reload()
-
-        cy.contains('td', name)
-            .parent('tr')
-            .within(() => cy.contains('button', 'Borrar').click())
-
-        cy.contains('td', name).should('not.exist')
-        categoryId = undefined
-    })
+    cy.contains('td', name).should('not.exist')
+  })
 })
-
-
-
-

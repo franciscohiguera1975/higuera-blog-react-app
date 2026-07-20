@@ -7,7 +7,4 @@ export default defineConfig({
     specPattern: 'cypress/e2e/**/*.cy.ts',
     supportFile: 'cypress/support/e2e.ts',
   },
-  env: {
-    apiUrl: 'http://localhost:3000',
-  },
 })

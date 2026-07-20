@@ -1,30 +1,17 @@
 // cypress/e2e/03-crud-posts.cy.ts
-import { uniqueEmail, uniqueName, uniqueUsername } from '../support/utils'
+import { mockCategories } from '../support/mocks/categories'
+import { mockPosts } from '../support/mocks/posts'
+import { uniqueName } from '../support/utils'
 
 describe('CRUD de Posts', () => {
-  let categoryId: string
-  let categoryName: string
-  let postId: string | undefined
+  it('crea un post nuevo con categoría', () => {
+    const categoryName = uniqueName('Categoría de posts')
+    const category = { id: crypto.randomUUID(), name: categoryName }
+    mockCategories([category])
+    mockPosts([category])
+    cy.loginByApi('/posts')
 
-  beforeEach(() => {
-    postId = undefined
-    categoryName = uniqueName('Categoría de posts')
-    cy.apiCreateCategory(categoryName).then((id) => {
-      categoryId = id
-    })
-    cy.intercept('POST', '**/posts').as('createPost')
-    cy.loginByApi(uniqueUsername(), uniqueEmail(), 'secret123', '/posts')
-  })
-
-  afterEach(() => {
-    // Igual que en categorías: sin reset de base, se limpia por API en cada test.
-    if (postId) cy.apiDeletePost(postId)
-    if (categoryId) cy.apiDeleteCategory(categoryId)
-  })
-
-    it('crea un post nuevo con categoría', () => {
     const title = uniqueName('Post')
-
     cy.contains('button', 'Nuevo post').click()
     cy.contains('Nuevo post').should('be.visible')
     cy.get('#title').type(title)
@@ -33,27 +20,20 @@ describe('CRUD de Posts', () => {
     cy.get('[role="option"]').contains(categoryName).click()
     cy.contains('button', 'Guardar').click()
 
-    cy.wait('@createPost').then(({ response }) => {
-      postId = response?.body.data.id
-    })
+    cy.wait('@createPost')
     cy.contains(title).should('be.visible')
     cy.contains(categoryName).should('be.visible')
   })
 
-    it('edita un post existente', () => {
+  it('edita un post existente', () => {
+    const categoryName = uniqueName('Categoría de posts')
+    const category = { id: crypto.randomUUID(), name: categoryName }
     const title = uniqueName('Post')
+    mockCategories([category])
+    mockPosts([category], [{ id: crypto.randomUUID(), title, content: 'Contenido original.', category }])
+    cy.loginByApi('/posts')
+
     const newTitle = uniqueName('Post editado')
-
-    cy.contains('button', 'Nuevo post').click()
-    cy.get('#title').type(title)
-    cy.get('#content').type('Contenido de prueba generado por Cypress.')
-    cy.contains('button', 'Selecciona una categoría').click()
-    cy.get('[role="option"]').contains(categoryName).click()
-    cy.contains('button', 'Guardar').click()
-    cy.wait('@createPost').then(({ response }) => {
-      postId = response?.body.data.id
-    })
-
     cy.contains(title).closest('tr').within(() => cy.contains('button', 'Editar').click())
     cy.contains('Editar post').should('be.visible')
     cy.get('#title').clear().type(newTitle)
@@ -63,21 +43,15 @@ describe('CRUD de Posts', () => {
   })
 
   it('borra un post existente', () => {
+    const categoryName = uniqueName('Categoría de posts')
+    const category = { id: crypto.randomUUID(), name: categoryName }
     const title = uniqueName('Post')
-
-    cy.contains('button', 'Nuevo post').click()
-    cy.get('#title').type(title)
-    cy.get('#content').type('Contenido de prueba generado por Cypress.')
-    cy.contains('button', 'Selecciona una categoría').click()
-    cy.get('[role="option"]').contains(categoryName).click()
-    cy.contains('button', 'Guardar').click()
-    cy.wait('@createPost').then(({ response }) => {
-      postId = response?.body.data.id
-    })
+    mockCategories([category])
+    mockPosts([category], [{ id: crypto.randomUUID(), title, content: 'Contenido original.', category }])
+    cy.loginByApi('/posts')
 
     cy.contains(title).closest('tr').within(() => cy.contains('button', 'Borrar').click())
 
     cy.contains(title).should('not.exist')
-    postId = undefined
   })
 })

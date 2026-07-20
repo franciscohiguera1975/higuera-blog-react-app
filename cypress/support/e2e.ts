@@ -1,17 +1,11 @@
-// ***********************************************************
-// This example support/e2e.ts is processed and
-// loaded automatically before your test files.
-//
-// This is a great place to put global configuration and
-// behavior that modifies Cypress.
-//
-// You can change the location of this file or turn off
-// automatically serving support files with the
-// 'supportFile' configuration option.
-//
-// You can read more here:
-// https://on.cypress.io/configuration
-// ***********************************************************
-
-// Import commands.js using ES2015 syntax:
+// cypress/support/e2e.ts
+// Se carga antes de cada archivo de spec (configurado en cypress.config.ts).
 import './commands'
+import { mockFallbacks } from './mocks/fallback'
+
+// Se registra antes de cada test (no solo una vez por spec) porque Cypress limpia
+// los intercepts entre tests. Los mocks específicos de cada entidad, al
+// registrarse después dentro del test, tienen prioridad sobre este fallback.
+beforeEach(() => {
+  mockFallbacks()
+})

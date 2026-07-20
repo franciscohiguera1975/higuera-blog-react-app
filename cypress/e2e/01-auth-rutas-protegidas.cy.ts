@@ -1,14 +1,14 @@
 // cypress/e2e/01-auth-rutas-protegidas.cy.ts
+import { mockAuth } from '../support/mocks/auth'
+import { mockCategories } from '../support/mocks/categories'
 import { uniqueEmail, uniqueUsername } from '../support/utils'
 
 describe('Registro', () => {
   it('permite crear una cuenta nueva y redirige al home', () => {
-    const username = uniqueUsername()
-    const email = uniqueEmail()
-
+    mockAuth()
     cy.visit('/register')
-    cy.get('#username').type(username)
-    cy.get('#email').type(email)
+    cy.get('#username').type(uniqueUsername())
+    cy.get('#email').type(uniqueEmail())
     cy.get('#password').type('secret123')
     cy.contains('button', 'Registrarme').click()
 
@@ -17,25 +17,18 @@ describe('Registro', () => {
 })
 
 describe('Login', () => {
-  let username: string
-  let password: string
-
-  before(() => {
-    username = uniqueUsername()
-    password = 'secret123'
-    cy.apiRegister(username, uniqueEmail(), password)
-  })
-
   it('permite iniciar sesión con credenciales válidas', () => {
+    mockAuth()
     cy.visit('/login')
-    cy.get('#username').type(username)
-    cy.get('#password').type(password)
+    cy.get('#username').type(uniqueUsername())
+    cy.get('#password').type('secret123')
     cy.contains('button', 'Ingresar').click()
 
     cy.location('pathname').should('eq', '/')
   })
 
-    it('muestra un error con credenciales inválidas', () => {
+  it('muestra un error con credenciales inválidas', () => {
+    mockAuth()
     // El interceptor de axios (src/api/http.ts) muestra el toast de error pero
     // igual re-lanza el rechazo de la promesa, y LoginPage no lo atrapa. Como
     // esa promesa rechazada nunca es manejada, el navegador la reporta como
@@ -44,7 +37,7 @@ describe('Login', () => {
     cy.on('uncaught:exception', () => false)
 
     cy.visit('/login')
-    cy.get('#username').type(username)
+    cy.get('#username').type(uniqueUsername())
     cy.get('#password').type('contraseña-incorrecta')
     cy.contains('button', 'Ingresar').click()
 
@@ -58,11 +51,10 @@ describe('Rutas protegidas', () => {
     cy.visit('/categorias')
     cy.location('pathname').should('eq', '/login')
   })
-})
 
-describe('Logout', () => {
   it('el logout limpia el token y vuelve a redirigir', () => {
-    cy.loginByApi(uniqueUsername(), uniqueEmail(), 'secret123', '/categorias')
+    mockCategories()
+    cy.loginByApi('/categorias')
     cy.location('pathname').should('eq', '/categorias')
 
     // El sidebar tiene su propio botón "Salir" (además del que hay en el
