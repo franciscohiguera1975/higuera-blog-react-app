@@ -1,14 +1,30 @@
-# .github/workflows/e2e.yml
-name: E2E (Cypress)
+# .github/workflows/ci-cd.yml
+name: CI/CD
 
 on:
-  pull_request:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
-  cypress:
+  # 1. Tests unitarios/integración con Vitest (mockeados con MSW, no necesitan backend real).
+  unit-tests:
+    name: Vitest
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run test:coverage
+
+  # 2. E2E con Cypress contra backend/frontend reales. Solo corre si Vitest pasó.
+  e2e:
+    name: E2E (Cypress)
+    runs-on: ubuntu-latest
+    needs: unit-tests
 
     services:
       postgres:
@@ -73,6 +89,14 @@ jobs:
           MONGO_URI: mongodb://localhost:27017/posts_db_mongo
           JWT_SECRET: supersecret
           JWT_EXPIRES_IN: 3600s
+          # GoogleStrategy (src/auth/google.strategy.ts) llama a passport-oauth2 con
+          # estos valores en el constructor, y esa librería rechaza un clientID vacío
+          # (aunque el código tenga `?? ''` de fallback) tirando el bootstrap entero de
+          # Nest abajo. Los specs de este tutorial nunca ejercitan el login con Google,
+          # así que cualquier valor no vacío alcanza para que la app arranque en CI.
+          GOOGLE_CLIENT_ID: dummy
+          GOOGLE_CLIENT_SECRET: dummy
+          GOOGLE_CALLBACK_URL: http://localhost:3000/auth/google/callback
 
       - name: Arrancar el frontend
         run: npm run dev -- --port 5173 &
@@ -89,3 +113,57 @@ jobs:
         with:
           name: cypress-screenshots
           path: cypress/screenshots
+
+  # 3. Deploy a la VPS. Solo corre en push a main, y solo si Vitest y Cypress pasaron.
+  deploy:
+    name: Deploy a VPS
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Create env for build
+        run: |
+          printf "%s" "${{ secrets.REACT_ENV }}" > .env.production
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_KEY }}
+          source: "dist/*"
+          target: "/tmp/react_build"
+
+      - name: Activate build on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_KEY }}
+          script: |
+            set -e
+
+            mkdir -p /var/www/higuera-blog-react-app
+            rm -rf /var/www/higuera-blog-react-app/*
+            cp -r /tmp/react_build/dist/* /var/www/higuera-blog-react-app/
+
+            chown -R www-data:www-data /var/www/higuera-blog-react-app
+
+            nginx -t
+            systemctl reload nginx
