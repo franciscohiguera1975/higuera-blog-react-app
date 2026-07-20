@@ -1,0 +1,80 @@
+# .github/workflows/e2e.yml
+name: E2E (Cypress)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: jate_user
+          POSTGRES_PASSWORD: jateP455word
+          POSTGRES_DB: posts_db_pg
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U jate_user"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias del backend
+        working-directory: higuera-blog-backend
+        run: npm ci
+
+      - name: Instalar dependencias del frontend
+        working-directory: higuera-blog-react-app
+        run: npm ci
+
+      - name: Arrancar el backend
+        working-directory: higuera-blog-backend
+        run: npm run start:dev &
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: jate_user
+          DB_PASS: jateP455word
+          DB_NAME: posts_db_pg
+          MONGO_URI: mongodb://localhost:27017/posts_db_mongo
+          JWT_SECRET: supersecret
+          JWT_EXPIRES_IN: 3600s
+
+      - name: Arrancar el frontend
+        working-directory: higuera-blog-react-app
+        run: npm run dev -- --port 5180 &
+
+      - name: Esperar a que backend y frontend respondan
+        run: npx wait-on http://localhost:3000/categories http://localhost:5180 --timeout 60000
+
+      - name: Correr Cypress
+        working-directory: higuera-blog-react-app
+        run: npx cypress run
+
+      - name: Subir screenshots de fallas (si las hay)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: higuera-blog-react-app/cypress/screenshots
